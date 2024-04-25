@@ -1,5 +1,6 @@
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
+import Notiflix from 'notiflix';
 
 const startButton = document.querySelector('button[data-start]');
 const daysText = document.querySelector('span[data-days]');
