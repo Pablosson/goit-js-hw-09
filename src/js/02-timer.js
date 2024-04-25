@@ -2,51 +2,63 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import Notiflix from 'notiflix';
 
-const startButton = document.querySelector('button[data-start]');
-const daysText = document.querySelector('span[data-days]');
-const hoursText = document.querySelector('span[data-hours]');
-const minutesText = document.querySelector('span[data-minutes]');
-const secondsText = document.querySelector('span[data-seconds]');
+const btnStart = document.querySelector('button[data-start]');
+btnStart.setAttribute('disabled', '');
 
-const options = {
+const counterDays = document.querySelector('span[data-days]');
+const counterHours = document.querySelector('span[data-hours]');
+const counterMinutes = document.querySelector('span[data-minutes]');
+const counterSeconds = document.querySelector('span[data-seconds]');
+
+let currentDateInMs = 0;
+let numberOfDays = 0;
+let numberOfHours = 0;
+let numberOfMinutes = 0;
+let numberOfSeconds = 0;
+let timerId = null;
+let difference = 0;
+let selectedDateInMs = 0;
+
+flatpickr('#datetime-picker', {
   enableTime: true,
   time_24hr: true,
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    const selectedDate = selectedDates[0];
-    const now = new Date();
-    if (selectedDate.getTime() <= now.getTime()) {
-      window.alert('Please choose a date in the future');
+    console.log(selectedDates[0]);
+    currentDateInMs = new Date().getTime();
+    selectedDateInMs = selectedDates[0].getTime();
+
+    if (selectedDateInMs < currentDateInMs) {
+      Notiflix.Notify.failure('Please choose a date in the future');
+      clearInterval(timerId);
+      render('0');
     } else {
-      startButton.removeAttribute('disabled');
-      startButton.dataset.start = selectedDate;
+      btnStart.removeAttribute('disabled');
+      clearInterval(timerId);
+      render('0');
     }
   },
-};
-
-flatpickr('input#dateTime-picker', options);
-
-startButton.addEventListener('click', ev => {
-  const { start } = ev.currentTarget.dataset;
-  let interval = null;
-  interval = setInterval(() => {
-    const timeNow = new Date();
-    const timeThen = new Date(start);
-    const timeLeft = timeThen.getTime() - timeNow.getTime();
-
-    const timeLeftObj = convertMs(timeLeft);
-
-    if (timeLeft >= 0) {
-      daysText.innerText = `${timeLeftObj.days}`.padStart(2, '0');
-      hoursText.innerText = `${timeLeftObj.hours}`.padStart(2, '0');
-      minutesText.innerText = `${timeLeftObj.minutes}`.padStart(2, '0');
-      secondsText.innerText = `${timeLeftObj.seconds}`.padStart(2, '0');
-    }
-
-    if (timeLeft <= 0) cleatInterval(interval);
-  }, 1000);
 });
+
+function render(string) {
+  numberOfDays = addLeadingZero(convertMs(string).days);
+  counterDays.textContent = numberOfDays;
+
+  numberOfHours = addLeadingZero(convertMs(string).hours);
+  counterHours.textContent = numberOfHours;
+
+  numberOfMinutes = addLeadingZero(convertMs(string).minutes);
+  counterMinutes.textContent = numberOfMinutes;
+
+  numberOfSeconds = addLeadingZero(convertMs(string).seconds);
+  counterSeconds.textContent = numberOfSeconds;
+}
+
+function addLeadingZero(value) {
+  let result = value.toString().padStart(2, '0');
+  return result;
+}
 
 function convertMs(ms) {
   // Number of milliseconds per unit of time
@@ -63,6 +75,22 @@ function convertMs(ms) {
   const minutes = Math.floor(((ms % day) % hour) / minute);
   // Remaining seconds
   const seconds = Math.floor((((ms % day) % hour) % minute) / second);
-
   return { days, hours, minutes, seconds };
 }
+
+function startTimer(difference) {
+  timerId = setInterval(() => {
+    currentDateInMs += 1000;
+    difference = selectedDateInMs - currentDateInMs;
+    render(difference);
+
+    if (difference <= 1000) {
+      clearInterval(timerId);
+    }
+  }, 1000);
+}
+
+btnStart.addEventListener('click', () => {
+  btnStart.setAttribute('disabled', '');
+  startTimer(difference);
+});
